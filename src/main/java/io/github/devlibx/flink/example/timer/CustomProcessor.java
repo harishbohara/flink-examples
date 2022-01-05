@@ -1,5 +1,6 @@
 package io.github.devlibx.flink.example.timer;
 
+import io.github.devlibx.flink.pojo.Order;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.state.MapState;
 import org.apache.flink.api.common.state.MapStateDescriptor;

@@ -1,4 +1,4 @@
-package io.github.devlibx.flink.example.timer;
+package io.github.devlibx.flink.pojo;
 
 import io.gitbub.devlibx.easy.helper.json.JsonUtils;
 import org.apache.flink.api.common.serialization.DeserializationSchema;
@@ -6,6 +6,9 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
 
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Event deceiver to convert Kafka message to POJO. It can be copied for other Pojos
+ */
 public class EventDeserializationSchema implements DeserializationSchema<Order> {
     private static final long serialVersionUID = 1L;
 

@@ -1,6 +1,8 @@
 package io.github.devlibx.flink.example.timer;
 
-import io.github.devlibx.flink.utils.ConfigReader;
+import io.github.devlibx.flink.pojo.EventDeserializationSchema;
+import io.github.devlibx.flink.pojo.Order;
+import io.github.devlibx.flink.utils.Main;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.connector.kafka.source.KafkaSource;
@@ -10,14 +12,16 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.PrintSinkFunction;
 import org.apache.flink.walkthrough.common.entity.Alert;
 
-public class Job {
+public class Job implements Main.RunJob {
     public static void main(String[] args) throws Exception {
-        ParameterTool argsParams = ParameterTool.fromArgs(args);
-        String bucket = argsParams.getRequired("bucket");
-        String filePath = argsParams.getRequired("file");
-        ParameterTool parameter = ConfigReader.readConfigsFromS3(bucket, filePath, false);
+        Job job = new Job();
+        Main.main(args, job);
+    }
 
-        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+    @Override
+    public void run(StreamExecutionEnvironment env, ParameterTool parameter) {
+
+        // Setup kafka source
         KafkaSource<Order> source = KafkaSource.<Order>builder()
                 .setBootstrapServers(parameter.get("brokers", "localhost:9092"))
                 .setTopics(parameter.get("topic", "orders"))
@@ -25,9 +29,12 @@ public class Job {
                 .setStartingOffsets(OffsetsInitializer.earliest())
                 .setValueOnlyDeserializer(new EventDeserializationSchema())
                 .build();
-        DataStream<Order> input = env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source");
-        DataStream<Alert> input1 = input.keyBy(Order::getCustomerKey).process(new CustomProcessor());
-        input1.addSink(new PrintSinkFunction<>());
-        env.execute("Fraud Detection");
+        DataStream<Order> kafkaStream = env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source");
+
+        // Transformer
+        DataStream<Alert> transformer = kafkaStream.keyBy(Order::getCustomerKey).process(new CustomProcessor());
+
+        // Skin
+        transformer.addSink(new PrintSinkFunction<>());
     }
 }
