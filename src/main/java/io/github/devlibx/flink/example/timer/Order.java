@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package com.devlibx.job;
+package io.github.devlibx.flink.example.timer;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;

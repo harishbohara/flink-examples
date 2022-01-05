@@ -1,4 +1,4 @@
-package com.devlibx.job;
+package io.github.devlibx.flink.example.timer;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.state.MapState;

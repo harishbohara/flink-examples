@@ -1,4 +1,4 @@
-package com.devlibx.job;
+package io.github.devlibx.flink.example.timer;
 
 import io.gitbub.devlibx.easy.helper.json.JsonUtils;
 import org.apache.flink.api.common.serialization.DeserializationSchema;

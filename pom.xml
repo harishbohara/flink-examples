@@ -31,6 +31,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-s3</artifactId>
+            <version>1.12.132</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>1.18.16</version>
@@ -133,7 +139,7 @@
                                     <transformers>
                                         <transformer
                                                 implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                            <mainClass>com.devlibx.job.Job</mainClass>
+                                            <mainClass>io.github.devlibx.flink.example.timer.Job</mainClass>
                                         </transformer>
                                     </transformers>
                                 </configuration>
@@ -198,7 +204,7 @@
                                     <transformers>
                                         <transformer
                                                 implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                            <mainClass>com.devlibx.job.Job</mainClass>
+                                            <mainClass>io.github.devlibx.flink.example.timer.Job</mainClass>
                                         </transformer>
                                     </transformers>
                                 </configuration>
