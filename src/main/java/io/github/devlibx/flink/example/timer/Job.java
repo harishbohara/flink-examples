@@ -2,6 +2,7 @@ package io.github.devlibx.flink.example.timer;
 
 import io.github.devlibx.flink.pojo.EventDeserializationSchema;
 import io.github.devlibx.flink.pojo.Order;
+import io.github.devlibx.flink.utils.ConfigReader;
 import io.github.devlibx.flink.utils.Main;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.java.utils.ParameterTool;
@@ -11,7 +12,6 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.PrintSinkFunction;
 import org.apache.flink.walkthrough.common.entity.Alert;
-import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 
 public class Job implements Main.RunJob {
     public static void main(String[] args) throws Exception {
@@ -27,9 +27,10 @@ public class Job implements Main.RunJob {
                 .setBootstrapServers(parameter.get("brokers", "localhost:9092"))
                 .setTopics(parameter.get("topic", "orders"))
                 .setGroupId(parameter.get("groupId", "1234"))
-                .setStartingOffsets(OffsetsInitializer.committedOffsets(OffsetResetStrategy.LATEST))
+                .setStartingOffsets(ConfigReader.getOffsetsInitializer(parameter))
                 .setValueOnlyDeserializer(new EventDeserializationSchema())
                 .build();
+
         DataStream<Order> kafkaStream = env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source");
 
         // Transformer
