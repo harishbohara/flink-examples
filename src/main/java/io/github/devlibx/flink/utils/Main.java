@@ -3,9 +3,13 @@ package io.github.devlibx.flink.utils;
 import com.google.common.base.Strings;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.contrib.streaming.state.EmbeddedRocksDBStateBackend;
+import org.apache.flink.streaming.api.CheckpointingMode;
+import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
 import java.util.Objects;
+
+import static org.apache.flink.streaming.api.environment.CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION;
 
 public class Main {
     public static void main(String[] args, RunJob runJob) throws Exception {
@@ -46,6 +50,34 @@ public class Main {
         }
         if (!Strings.isNullOrEmpty(backend) && Objects.equals("rocksdb", backend)) {
             env.setStateBackend(new EmbeddedRocksDBStateBackend());
+        }
+
+        // start a checkpoint every 1000 ms
+        env.enableCheckpointing(parameter.getInt("enableCheckpointing", 30 * 1000));
+
+        // set mode to exactly-once (this is the default)
+        String checkpointingMode = parameter.get("checkpointingMode", CheckpointingMode.EXACTLY_ONCE.name());
+        env.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.valueOf(checkpointingMode));
+
+        // make sure 500 ms of progress happen between checkpoints
+        env.getCheckpointConfig().setMinPauseBetweenCheckpoints(parameter.getInt("minPauseBetweenCheckpoints", 30 * 1000));
+
+        // checkpoints have to complete within one minute, or are discarded
+        env.getCheckpointConfig().setCheckpointTimeout(parameter.getInt("checkpointTimeout", 15 * 60000));
+
+        // only two consecutive checkpoint failures are tolerated
+        env.getCheckpointConfig().setTolerableCheckpointFailureNumber(parameter.getInt("tolerableCheckpointFailureNumber", 2));
+
+        // allow only one checkpoint to be in progress at the same time
+        env.getCheckpointConfig().setMaxConcurrentCheckpoints(parameter.getInt("maxConcurrentCheckpoints", 1));
+
+        // enable externalized checkpoints which are retained after job cancellation
+        String enableExternalizedCheckpoints = parameter.get("enableExternalizedCheckpoints", RETAIN_ON_CANCELLATION.name());
+        env.getCheckpointConfig().enableExternalizedCheckpoints(CheckpointConfig.ExternalizedCheckpointCleanup.valueOf(enableExternalizedCheckpoints));
+
+        // enables the unaligned checkpoints
+        if (parameter.getBoolean("enableUnalignedCheckpoints", true)) {
+            env.getCheckpointConfig().enableUnalignedCheckpoints();
         }
     }
 
