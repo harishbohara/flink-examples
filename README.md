@@ -12,3 +12,14 @@ Copy config file to S3
 ```shell
 aws s3 cp config.properties s3://<your bucket>/flink/   
 ```
+
+#### Run
+```shell
+# change the jar name and path
+java -cp target/my-app-1.0-SNAPSHOT.jar:.  --bucket <bucket> --file <file> com.myapp.Job 
+```
+
+### Sample commands
+```shell
+mvn archetype:create-from-project
+```
