@@ -7,16 +7,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
 import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
-import org.apache.flink.util.Collector;
 import org.apache.flink.walkthrough.common.entity.Alert;
-import org.joda.time.DateTime;
 
 @Slf4j
 public class Pipeline {
-
 
     SingleOutputStreamOperator<Alert> process(StreamExecutionEnvironment env, DataStream<Order> orders, StringObjectMap parameter) {
 
@@ -44,40 +40,9 @@ public class Pipeline {
                 .keyBy(value -> "1")
 
                 // Finally output the result at the end of each slide
-                .process(new KeyedProcessFunction<String, Integer, Alert>() {
-                    long nextTimeStamp;
+                .process(new ResultProcessFunction(slide))
 
-                    @Override
-                    public void onTimer(long timestamp, OnTimerContext ctx, Collector<Alert> out) throws Exception {
-                        super.onTimer(timestamp, ctx, out);
-
-                        // Send a alert that we did not get events in last window
-                        Alert alert = new Alert();
-                        alert.setId(-1);
-                        out.collect(alert);
-
-                        ctx.timerService().deleteProcessingTimeTimer(timestamp);
-                        nextTimeStamp = DateTime.now().plusSeconds(slide + 10).getMillis();
-                        ctx.timerService().registerProcessingTimeTimer(nextTimeStamp);
-                    }
-
-                    @Override
-                    public void processElement(Integer count, Context ctx, Collector<Alert> out) throws Exception {
-
-                        // CLIENT TO UNCOMMENT - You can send count like following
-                        // For this sample I want to send a alert if I did not get event in N sec
-                        // You uncomment the code to send event
-                        if (false) { // --> remove this if condition
-                            Alert alert = new Alert();
-                            alert.setId(count);
-                            out.collect(alert);
-                        }
-
-                        ctx.timerService().deleteProcessingTimeTimer(nextTimeStamp);
-                        nextTimeStamp = DateTime.now().plusSeconds(slide + 10).getMillis();
-                        ctx.timerService().registerProcessingTimeTimer(nextTimeStamp);
-                    }
-                })
+                // Name this operation for display
                 .name("OrderAggregator");
     }
 }
