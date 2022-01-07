@@ -1,6 +1,6 @@
 package io.github.devlibx.flink.example.timer;
 
-import io.github.devlibx.flink.pojo.Order;
+import io.github.devlibx.flink.example.pojo.Order;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.state.MapState;
 import org.apache.flink.api.common.state.MapStateDescriptor;
@@ -36,6 +36,7 @@ public class CustomProcessor extends KeyedProcessFunction<Long, Order, Alert> {
     }
 
     static int i = 0;
+
     @Override
     public void processElement(Order value, Context context, Collector<Alert> out) throws Exception {
 
