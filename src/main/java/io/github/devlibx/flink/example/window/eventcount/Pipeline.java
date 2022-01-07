@@ -3,15 +3,18 @@ package io.github.devlibx.flink.example.window.eventcount;
 import io.gitbub.devlibx.easy.helper.map.StringObjectMap;
 import io.github.devlibx.easy.flink.window.CountAggregatorFunction;
 import io.github.devlibx.flink.example.pojo.Order;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.ProcessFunction;
+import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
 import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
 import org.apache.flink.walkthrough.common.entity.Alert;
+import org.joda.time.DateTime;
 
+@Slf4j
 public class Pipeline {
 
 
@@ -38,17 +41,41 @@ public class Pipeline {
                 // Sum all the orders in this window
                 .aggregate(new CountAggregatorFunction<>())
 
+                .keyBy(value -> "1")
+
                 // Finally output the result at the end of each slide
-                .process(new ProcessFunction<Integer, Alert>() {
+                .process(new KeyedProcessFunction<String, Integer, Alert>() {
+                    long nextTimeStamp;
+
                     @Override
-                    public void processElement(Integer count, Context context, Collector<Alert> collector) throws Exception {
+                    public void onTimer(long timestamp, OnTimerContext ctx, Collector<Alert> out) throws Exception {
+                        super.onTimer(timestamp, ctx, out);
 
-                        // FOR CLIENT TO CHANGE - this is your own logic
-                        // Here I am emitting a object names Alert -> you can change it
+                        // Send a alert that we did not get events in last window
                         Alert alert = new Alert();
-                        alert.setId(count);
-                        collector.collect(alert);
+                        alert.setId(-1);
+                        out.collect(alert);
 
+                        ctx.timerService().deleteProcessingTimeTimer(timestamp);
+                        nextTimeStamp = DateTime.now().plusSeconds(slide + 10).getMillis();
+                        ctx.timerService().registerProcessingTimeTimer(nextTimeStamp);
+                    }
+
+                    @Override
+                    public void processElement(Integer count, Context ctx, Collector<Alert> out) throws Exception {
+
+                        // CLIENT TO UNCOMMENT - You can send count like following
+                        // For this sample I want to send a alert if I did not get event in N sec
+                        // You uncomment the code to send event
+                        if (false) { // --> remove this if condition
+                            Alert alert = new Alert();
+                            alert.setId(count);
+                            out.collect(alert);
+                        }
+
+                        ctx.timerService().deleteProcessingTimeTimer(nextTimeStamp);
+                        nextTimeStamp = DateTime.now().plusSeconds(slide + 10).getMillis();
+                        ctx.timerService().registerProcessingTimeTimer(nextTimeStamp);
                     }
                 })
                 .name("OrderAggregator");
