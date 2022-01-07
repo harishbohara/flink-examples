@@ -1,6 +1,8 @@
 package io.github.devlibx.flink.example.window.eventcount;
 
 import io.gitbub.devlibx.easy.helper.map.StringObjectMap;
+import io.github.devlibx.easy.flink.functions.EventNotReceivedInWindowKeyedProcessFunction;
+import io.github.devlibx.easy.flink.functions.common.EventCount;
 import io.github.devlibx.easy.flink.window.CountAggregatorFunction;
 import io.github.devlibx.flink.example.pojo.Order;
 import lombok.extern.slf4j.Slf4j;
@@ -9,12 +11,11 @@ import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
-import org.apache.flink.walkthrough.common.entity.Alert;
 
 @Slf4j
 public class Pipeline {
 
-    SingleOutputStreamOperator<Alert> process(StreamExecutionEnvironment env, DataStream<Order> orders, StringObjectMap parameter) {
+    SingleOutputStreamOperator<EventCount> process(StreamExecutionEnvironment env, DataStream<Order> orders, StringObjectMap parameter) {
 
         // FOR CLIENT TO CHANGE - Filter orders
         // Let's say you want to filter only failed orders.
@@ -40,7 +41,7 @@ public class Pipeline {
                 .keyBy(value -> "1")
 
                 // Finally output the result at the end of each slide
-                .process(new ResultProcessFunction(slide))
+                .process(new EventNotReceivedInWindowKeyedProcessFunction(slide + 10))
 
                 // Name this operation for display
                 .name("OrderAggregator");
