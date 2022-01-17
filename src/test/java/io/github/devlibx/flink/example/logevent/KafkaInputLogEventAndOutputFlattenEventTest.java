@@ -62,7 +62,7 @@ public class KafkaInputLogEventAndOutputFlattenEventTest {
             try {
                 Path currentRelativePath = Paths.get("");
                 String path = currentRelativePath.toAbsolutePath().toString();
-                Job.main(new String[]{"--config", path + "/config.properties"});
+                LogEventToFlattenLogEventJob.main(new String[]{"--config", path + "/config.properties"});
             } catch (Exception e) {
                 e.printStackTrace();
             }

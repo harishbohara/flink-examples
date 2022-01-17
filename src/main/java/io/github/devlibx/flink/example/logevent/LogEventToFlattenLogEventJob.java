@@ -1,7 +1,6 @@
 package io.github.devlibx.flink.example.logevent;
 
 import io.gitbub.devlibx.easy.helper.common.LogEvent;
-import io.gitbub.devlibx.easy.helper.map.StringObjectMap;
 import io.github.devlibx.easy.flink.utils.KafkaSourceHelper;
 import io.github.devlibx.easy.flink.utils.MainTemplate;
 import io.github.devlibx.flink.example.pojo.FlattenLogEvent;
@@ -15,7 +14,7 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import java.io.Serializable;
 import java.util.UUID;
 
-public class Job implements MainTemplate.RunJob {
+public class LogEventToFlattenLogEventJob implements MainTemplate.RunJob {
 
     @Override
     public void run(StreamExecutionEnvironment env, ParameterTool parameter) {
@@ -35,15 +34,15 @@ public class Job implements MainTemplate.RunJob {
                 LogEvent.class
         );
 
-        // Process data
-        SingleOutputStreamOperator<FlattenLogEvent> outputStream = new Pipeline().process(
-                env,
-                orders,
-                StringObjectMap.of(
-                        "windowDuration", parameter.getInt("EventCountJob.windowDuration", 60),
-                        "emitResultEventNthSeconds", parameter.getInt("EventCountJob.emitResultEventNthSeconds", 60)
-                )
-        );
+        // Ensure that we do not send bad events
+        SingleOutputStreamOperator<FlattenLogEvent> outputStream = orders
+                // Make sure we ignore null event
+                .filter(le -> le.getEntity() != null)
+                // Order by status - you can ignore it and use WindowAll function if required
+                .keyBy(logEvent -> logEvent.getEntity().getType() + "-" + logEvent.getEntity().getId())
+                // Setup event processor
+                .process(new InternalProcessor())
+                .name("LogEventToFlattenLogEventConvertor");
 
         // Setup kafka sink as output
         KafkaSink<FlattenLogEvent> kafkaSink = KafkaSourceHelper.flink1_14_2_KafkaSink(
@@ -58,7 +57,7 @@ public class Job implements MainTemplate.RunJob {
     }
 
     public static void main(String[] args) throws Exception {
-        Job job = new Job();
+        LogEventToFlattenLogEventJob job = new LogEventToFlattenLogEventJob();
         MainTemplate.main(args, "LogEventJob", job);
     }
 
