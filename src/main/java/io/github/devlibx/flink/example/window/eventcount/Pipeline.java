@@ -42,7 +42,7 @@ public class Pipeline {
                 // Sum all the orders in this window
                 .aggregate(new CountAggregatorFunction<>())
 
-                .keyBy(value -> value.toString())
+                .keyBy(value -> "1")
 
                 // Finally output the result at the end of each slide
                 // .process(new EventNotReceivedInWindowKeyedProcessFunction(slide + 10))
