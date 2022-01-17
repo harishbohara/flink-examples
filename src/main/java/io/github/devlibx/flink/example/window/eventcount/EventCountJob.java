@@ -1,6 +1,7 @@
 package io.github.devlibx.flink.example.window.eventcount;
 
 import io.gitbub.devlibx.easy.helper.map.StringObjectMap;
+import io.github.devlibx.easy.flink.functions.common.EventCount;
 import io.github.devlibx.easy.flink.utils.KafkaSourceHelper;
 import io.github.devlibx.easy.flink.utils.MainTemplate;
 import io.github.devlibx.flink.example.pojo.Order;
@@ -10,6 +11,7 @@ import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.PrintSinkFunction;
+import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 
 import java.util.UUID;
 
@@ -29,9 +31,9 @@ public class EventCountJob implements MainTemplate.RunJob {
         // Create a kafka source
         DataStream<Order> orders = KafkaSourceHelper.flink1_14_2_KafkaSource(
                 KafkaSourceHelper.KafkaSourceConfig.builder()
-                        .brokers(parameter.get("brokers", "localhost:9092"))
-                        .groupId(parameter.get("groupId", "1234"))
-                        .topic(parameter.get("topic", "orders"))
+                        .brokers(parameter.get("EventCountJob.input.brokers", "localhost:9092"))
+                        .groupId(parameter.get("EventCountJob.input.groupId", "1234"))
+                        .topic(parameter.get("EventCountJob.input.topic", "orders"))
                         .build(),
                 env,
                 "OrdersKafkaStream",
@@ -47,10 +49,14 @@ public class EventCountJob implements MainTemplate.RunJob {
                         "windowDuration", parameter.getInt("EventCountJob.windowDuration", 60),
                         "emitResultEventNthSeconds", parameter.getInt("EventCountJob.emitResultEventNthSeconds", 60)
                 )
-        ).addSink(new PrintSinkFunction<>()).name("PrintSink").uid(UUID.randomUUID().toString());
+        ).addSink(sink()).name("PrintSink").uid(UUID.randomUUID().toString());
         // The output of "Pipeline" class is sent to a Print sink -> you can send to some topic if required
 
         // Multi-Source example - One more sink from same source
         // orders.addSink(new PrintSinkFunction<>()).name("PrintSink2").uid(UUID.randomUUID().toString());
+    }
+
+    protected SinkFunction<EventCount> sink() {
+        return new PrintSinkFunction<>();
     }
 }

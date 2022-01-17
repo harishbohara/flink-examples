@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.sink.PrintSinkFunction;
 import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
 
@@ -22,6 +23,8 @@ public class Pipeline {
         // Let's say you want to filter only failed orders.
         DataStream<Order> highPriorityOrders = orders
                 .filter(order -> "F".equals(order.getOrderStatus()));
+
+        // highPriorityOrders.addSink(new PrintSinkFunction<>());
 
         // Get the window size and slide from config
         int size = parameter.getInt("windowDuration", 60);
@@ -39,7 +42,7 @@ public class Pipeline {
                 // Sum all the orders in this window
                 .aggregate(new CountAggregatorFunction<>())
 
-                .keyBy(value -> "1")
+                .keyBy(value -> value.toString())
 
                 // Finally output the result at the end of each slide
                 // .process(new EventNotReceivedInWindowKeyedProcessFunction(slide + 10))
