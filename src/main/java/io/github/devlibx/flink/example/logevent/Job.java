@@ -11,7 +11,6 @@ import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
 
 import java.io.Serializable;
 import java.util.UUID;
@@ -36,7 +35,6 @@ public class Job implements MainTemplate.RunJob {
                 LogEvent.class
         );
 
-
         // Process data
         SingleOutputStreamOperator<FlattenLogEvent> outputStream = new Pipeline().process(
                 env,
@@ -57,7 +55,6 @@ public class Job implements MainTemplate.RunJob {
                 FlattenLogEvent.class
         );
         outputStream.sinkTo(kafkaSink).name("KafkaSink").uid(UUID.randomUUID().toString());
-        // outputStream.addSink(kafkaSink).name("KafkaSink").uid(UUID.randomUUID().toString());
     }
 
     public static void main(String[] args) throws Exception {
