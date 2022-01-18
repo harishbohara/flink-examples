@@ -47,5 +47,8 @@ public class Order implements Serializable {
     private long shipPriority;
     @JsonProperty("comment")
     private String comment;
+    @JsonProperty("timestamp")
+    private long timestamp;
+
 }
 

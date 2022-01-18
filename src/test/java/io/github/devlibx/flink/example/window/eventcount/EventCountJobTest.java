@@ -6,6 +6,7 @@ import com.google.inject.Injector;
 import io.gitbub.devlibx.easy.helper.json.JsonUtils;
 import io.gitbub.devlibx.easy.helper.yaml.YamlUtils;
 import io.github.devlibx.easy.flink.functions.common.EventCount;
+import io.github.devlibx.easy.flink.utils.MainTemplate;
 import io.github.devlibx.easy.messaging.config.MessagingConfigs;
 import io.github.devlibx.easy.messaging.consumer.IConsumer;
 import io.github.devlibx.easy.messaging.kafka.module.MessagingKafkaModule;
@@ -19,14 +20,12 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.joda.time.DateTime;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -56,18 +55,15 @@ public class EventCountJobTest {
     }
 
     @Test
-    @Disabled
     public void testPipeline() throws Exception {
         // Test UUID
         String uid = UUID.randomUUID().toString();
 
-        CountDownLatch latch = new CountDownLatch(1);
-        AtomicReference<EventCount> eventCount = new AtomicReference<>();
         EventCountJobSub.sinkFunction = new SinkFunction<EventCount>() {
             @Override
             public void invoke(EventCount value, Context context) throws Exception {
-                eventCount.set(value);
-                latch.countDown();
+                EventCountJobSub.eventCount.set(value);
+                EventCountJobSub.foundResult.set(true);
             }
         };
 
@@ -77,7 +73,8 @@ public class EventCountJobTest {
                 Path currentRelativePath = Paths.get("");
                 String path = currentRelativePath.toAbsolutePath().toString();
                 String file = TestConfigUtil.cloneConfig(path + "/config.properties", UUID.randomUUID().toString());
-                EventCountJob.main(new String[]{"--config", file});
+                EventCountJob job = new EventCountJobSub();
+                MainTemplate.main(new String[]{"--config", file}, "EventCountJob", job);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -104,13 +101,18 @@ public class EventCountJobTest {
             }
         }).start();
 
-        latch.await(60, TimeUnit.MINUTES);
-        Assertions.assertNotNull(eventCount.get());
-        Assertions.assertTrue(eventCount.get().getCount() > 0);
+        int c = 0;
+        while (!EventCountJobSub.foundResult.get() && c++ < 60) {
+            Thread.sleep(1000);
+        }
+        Assertions.assertNotNull(EventCountJobSub.eventCount.get());
+        Assertions.assertTrue(EventCountJobSub.eventCount.get().getCount() > 0);
     }
 
     private static class EventCountJobSub extends EventCountJob {
         private static SinkFunction<EventCount> sinkFunction;
+        public static AtomicBoolean foundResult = new AtomicBoolean(false);
+        public static AtomicReference<EventCount> eventCount = new AtomicReference<>();
 
         @Override
         protected SinkFunction<EventCount> sink() {
